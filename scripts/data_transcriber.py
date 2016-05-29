@@ -57,9 +57,9 @@ class RobotLogger():
         if self.generate_video:
             image_util.generate_video(self.iteration_number)
         if message.data:
-            with open('path_list.json', 'w') as path:
+           # with open('path_list.json', 'w') as path:
                 #Saving the entire path to be confirmed
-                json.dump(self.path_list, path)
+            #    json.dump(self.path_list, path)
             with open('policy_list.json', 'w') as policy:
                 #Saving only the last policy to be compared
                 json.dump(self.policy_list[-1], policy)

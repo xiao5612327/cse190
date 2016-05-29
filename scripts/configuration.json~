@@ -15,7 +15,7 @@
     [1, 3]
   ],
 
-  "max_iterations": 30,
+  "max_iterations": 20,
   "threshold_difference": 0.00001,
 
 

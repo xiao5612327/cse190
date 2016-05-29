@@ -2,6 +2,7 @@
 import rospy
 import random
 import math
+from copy import deepcopy
 import numpy as np
 from std_msgs.msg import String, Float32, Bool
 from read_config import read_config
@@ -73,11 +74,37 @@ class MDP():
 			#publish policy
 			self.publish_iteration()
 			iteration += 1
-			
+			self.move_walls()	
 			if (stop_iter):
 				return
 			
-		
+	def move_walls(self):
+		collision = False
+		self.new_walls = []
+		for i in (self.walls):
+			x = i[0]
+			y = i[1]
+			self.policy_list[x][y] = "N"
+			self.grid[x][y] = 0
+			self.walls.remove(i)
+			while ( collision == False ):
+				x = random.randint(-1, 1)
+				y = random.randint(-1, 1)
+				while((i[0]+x) <0 or (i[0]+x) >= self.row):
+					x = random.randint(-1, 1)
+				
+				while((i[1] +y) <0 or (i[1]+y) >= self.col):
+					y = random.randint(-1, 1)
+				if(x == 1 or x == -1):	
+					y = 0
+				x += i[0]
+				y += i[1]	
+				if([x,y] not in self.walls and [x,y] not in self.goal and [x,y] not in self.pits):
+					self.policy_list[x][y] = "WALL"
+					self.grid[x][y] = 0
+					self.new_walls.append([x,y])
+					collision = True
+		self.walls = deepcopy(self.new_walls)
 
 	def init_grid (self):
 		for i in range (self.row):

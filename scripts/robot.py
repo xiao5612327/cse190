@@ -28,7 +28,7 @@ class Robot ():
 
 		# publish A* path
 		self.path_array = []
-		self.publish_astar()
+		#self.publish_astar()
 
 		# publish MDP
 		#print "running mdp"
