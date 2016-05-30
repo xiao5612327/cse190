@@ -6,7 +6,7 @@ from copy import deepcopy
 import numpy as np
 from std_msgs.msg import String, Float32, Bool
 from read_config import read_config
-from cse_190_assi_3.msg import *
+from cse_190_final.msg import *
 from astar import Astar
 
 class MDP():
@@ -45,12 +45,12 @@ class MDP():
 		self.grid = [[0 for x in range(self.col)] for y in range(self.row)]
 		self.policy_list = [[0 for x in range(self.col)] for y in range(self.row)]
 
+		
 
 	def make_policy (self):
 		self.init_grid()
 		self.publish_iteration()
 		# going through iter-1 because init takes care of k=0
-		iteration = 1
 		for i in range (self.max_iterations-1):
 			#print "iteration ", iteration, ":"
 			new_grid = [[0 for x in range(self.col)] for y in range(self.row)]
@@ -70,41 +70,122 @@ class MDP():
 					new_grid[r][c] = max_cost
 				  	self.update_policy(r, c, best_move)	
 			stop_iter = self.copy_grid(new_grid)
-			#print "about to publish"
 			#publish policy
-			self.publish_iteration()
-			iteration += 1
 			self.move_walls()	
+			self.publish_iteration()
 			if (stop_iter):
+				break
+		
+		self.current_pos = self.init_src()
+		self.print_map()
+		while (self.current_pos[0] != self.goal[0] or self.current_pos[1] != self.goal[1]):
+			move = self.get_move (self.policy_list[self.current_pos[0]][self.current_pos[1]])
+			self.handle_move_request(move)
+			self.print_map()
+			if (self.current_pos in self.pits):
+				print "GAME OVER.YOU FAILED THE MISSION"
 				return
+			if (self.current_pos[0] == self.goal[0] and self.current_pos[1] == self.goal[1]):
+				print "YOU WIN!"
+				return
+	
+	def init_src (self):
+		r = random.randint(0,self.row-1)
+		c = random.randint(0,self.col-1)
+		while ([r,c] in self.walls):
+			r = random.randint(0,self.row-1)
+			c = random.randint(0,self.col-1)
+		return [r,c]
 			
+
+
+ 	def handle_move_request(self, move):
+        	if self.config['uncertain_motion']:
+            		roll = random.uniform(0,1)
+            		if roll < self.config["prob_move_correct"]:
+                		self.make_move(move)
+            		else:
+                		possible_moves = deepcopy(self.config['move_list'])
+                		possible_moves.remove(move)
+                		random_move = random.choice(possible_moves)
+                		self.make_move(random_move)
+        	elif not self.config['uncertain_motion']:
+            		self.make_move(move)
+
+
+    	def make_move(self, move):
+		pos = [0,0]
+        	pos[0] = (self.current_pos[0] + move[0]) 
+        	pos[1] = (self.current_pos[1] + move[1]) 
+		if (pos not in self.walls):
+			if((pos[0] >= self.row or pos[0] <= -1) or (pos[1] >= self.col or pos[1] <= -1)):
+				return
+			self.current_pos[0] = pos[0]
+			self.current_pos[1] = pos[1]
+
+	def get_move (self, direction):
+		if ( direction == "N" ):
+			return [-1,0]
+		if ( direction == "S" ):
+			return [1,0]
+		if ( direction == "W" ):
+			return [0,-1]
+		if ( direction == "E" ):
+			return [0,1]
+
+
+	def print_map (self):
+		for row in range (self.row):
+			for col in range (self.col):
+				if([row, col] in self.walls):
+					print "# |",
+				elif(row == self.goal[0] and col == self.goal[1]):
+					print "G |",
+				elif([row, col] in self.pits):
+					print "X |",
+				elif(row == self.current_pos[0] and col == self.current_pos[1]):
+					print "R |",
+				else:
+					print "  |",
+			print ""
+			
+			for c in range (self.col):
+				print "--",
+			print ""	
+		print " "
+
+
 	def move_walls(self):
-		collision = False
-		self.new_walls = []
+		new_walls = []
 		for i in (self.walls):
-			x = i[0]
-			y = i[1]
-			self.policy_list[x][y] = "N"
-			self.grid[x][y] = 0
-			self.walls.remove(i)
+			collision = False
 			while ( collision == False ):
-				x = random.randint(-1, 1)
-				y = random.randint(-1, 1)
+				x = random.randint(-2, 2)
+				y = random.randint(-2, 2)
+
 				while((i[0]+x) <0 or (i[0]+x) >= self.row):
-					x = random.randint(-1, 1)
-				
+					x = random.randint(-2, 2)
 				while((i[1] +y) <0 or (i[1]+y) >= self.col):
-					y = random.randint(-1, 1)
-				if(x == 1 or x == -1):	
+					y = random.randint(-2, 2)
+
+				if(x == 2 or x == 1 or x == -1 or x == -2):	
 					y = 0
+
 				x += i[0]
-				y += i[1]	
-				if([x,y] not in self.walls and [x,y] not in self.goal and [x,y] not in self.pits):
+				y += i[1]
+
+				if([x,y] not in new_walls and (x != self.goal[0] and y != self.goal[1]) and [x,y] not in self.pits):
 					self.policy_list[x][y] = "WALL"
 					self.grid[x][y] = 0
-					self.new_walls.append([x,y])
+					self.policy_list[i[0]][i[1]] = "N"
+					self.grid[i[0]][i[1]] = 0
+					new_walls.append([x,y])
 					collision = True
-		self.walls = deepcopy(self.new_walls)
+		self.walls = []
+		for j in (new_walls):
+			self.walls.append(deepcopy(j))
+
+		print len(self.walls), len(new_walls)
 
 	def init_grid (self):
 		for i in range (self.row):
@@ -232,6 +313,10 @@ class MDP():
 	def publish_iteration(self):
 		msg = PolicyList()
 		array = []
+
+		for w in (self.walls):
+			self.policy_list[w[0]][w[1]] = "WALL"
+
 		for i in range (self.row):
 			for j in range (self.col):
 				array.append(self.policy_list[i][j])	

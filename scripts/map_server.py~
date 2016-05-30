@@ -43,6 +43,7 @@ class MapServer():
         return self.pos
 
     def make_move(self, move):
+        """Changes the robot's position"""
         num_rows = self.config['map_size'][0]
         num_cols = self.config['map_size'][1]
         self.pos[0] = (self.pos[0] + move[0]) % num_rows

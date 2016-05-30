@@ -54,8 +54,8 @@ class RobotLogger():
 
     def handle_shutdown(self, message):
         print "sim complete!", message.data
-        if self.generate_video:
-            image_util.generate_video(self.iteration_number)
+        #if self.generate_video:
+           # image_util.generate_video(self.iteration_number)
         if message.data:
            # with open('path_list.json', 'w') as path:
                 #Saving the entire path to be confirmed

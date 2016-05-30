@@ -1,5 +1,5 @@
 <launch>
     <node pkg="cse_190_final" type="robot.py" name="robot" output="screen" required="true"/> 
     <node pkg="cse_190_final" type="data_transcriber.py" name="data_transcriber" output="screen" cwd="node"/> 
-   
+    <node pkg="cse_190_final" type="map_server.py" name="map_server" output="screen"/> 
 </launch>
