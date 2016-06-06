@@ -14,6 +14,11 @@ class Robot ():
 	def __init__(self):
 		rospy.init_node ("robot")
 		self.config = read_config()
+		self.map_size = self.config['map_size']
+		self.max_iterations = self.config['max_iterations']
+		self.row = self.map_size[0]	
+		self.col = self.map_size[1]	
+
 		self.astar_pub = rospy.Publisher(
 			"/results/path_list",
 			AStarPath,
@@ -32,14 +37,33 @@ class Robot ():
 
 		# publish MDP
 		#print "running mdp"
+		
+		self.policy_list_nonopt= [[0 for x in range(self.col)] for y in range(self.row)]
+		self.policy_list_opt = [[0 for x in range(self.col)] for y in range(self.row)]
+
 		self.mdp = MDP()
-		self.mdp.make_policy()
+		self.mdp.make_policy(False, 20, self.policy_list_nonopt)
+		self.mdp.make_policy(True, self.max_iterations, self.policy_list_opt)
+
+		self.compare_policies()
 
 		rospy.sleep(1)
 		self.sim_complete_pub.publish(True)
 		rospy.sleep(1)
 		rospy.signal_shutdown(Robot)
 
+	def compare_policies (self):
+		diff = 0
+		same = 0
+		for r in range (self.row):
+			for c in range (self.col):
+				if (self.policy_list_opt[r][c] != self.policy_list_nonopt[r][c]):
+					diff = diff + 1
+				else:
+					same = same + 1
+
+		print "same: ", same
+		print "diff: ", diff
 
 	def publish_astar(self):
 		obj = Astar()

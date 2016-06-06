@@ -47,11 +47,11 @@ class MDP():
 
 		
 
-	def make_policy (self, optimal, max_iterations, policy_list):
+	def make_policy (self):
 		self.init_grid()
 		self.publish_iteration()
 		# going through iter-1 because init takes care of k=0
-		for i in range (max_iterations-1):
+		for i in range (self.max_iterations-1):
 			#print "iteration ", iteration, ":"
 			new_grid = [[0 for x in range(self.col)] for y in range(self.row)]
 			for r in range (self.row):
@@ -71,16 +71,11 @@ class MDP():
 				  	self.update_policy(r, c, best_move)	
 			stop_iter = self.copy_grid(new_grid)
 			#publish policy
-			if (optimal == False):
-				self.move_walls()	
+			self.move_walls()	
 			self.publish_iteration()
-			if (optimal == True and stop_iter):
+			if (stop_iter):
 				break
 		
-		for r in range (self.col):
-			for w in range(self.col):
-				policy_list[r][w] = self.policy_list[r][w]
-
 		self.current_pos = self.init_src()
 		self.print_map()
 		while (self.current_pos[0] != self.goal[0] or self.current_pos[1] != self.goal[1]):
@@ -88,14 +83,12 @@ class MDP():
 			self.handle_move_request(move)
 			self.print_map()
 			if (self.current_pos in self.pits):
-				#self.print_map()
 				print "GAME OVER.YOU FAILED THE MISSION"
 				return
 			if (self.current_pos[0] == self.goal[0] and self.current_pos[1] == self.goal[1]):
-				#self.print_map()
 				print "YOU WIN!"
 				return
-
+	
 	def init_src (self):
 		r = random.randint(0,self.row-1)
 		c = random.randint(0,self.col-1)
@@ -129,14 +122,6 @@ class MDP():
 				return
 			self.current_pos[0] = pos[0]
 			self.current_pos[1] = pos[1]
-        	
-		elif (pos in self.walls):
-			self.config['prob_move_correct'] = self.config['prob_move_correct'] - 0.05
-			if (self.config['prob_move_correct'] < 0.7):
-        			self.config['prob_move_correct'] = 0.7
-			return
-		
-			
 
 	def get_move (self, direction):
 		if ( direction == "N" ):
@@ -200,6 +185,7 @@ class MDP():
 		for j in (new_walls):
 			self.walls.append(deepcopy(j))
 
+		print len(self.walls), len(new_walls)
 
 	def init_grid (self):
 		for i in range (self.row):
