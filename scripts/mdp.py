@@ -107,6 +107,7 @@ class MDP():
 
 
  	def handle_move_request(self, move):
+        	print self.config['prob_move_correct']
         	if self.config['uncertain_motion']:
             		roll = random.uniform(0,1)
             		if roll < self.config["prob_move_correct"]:
