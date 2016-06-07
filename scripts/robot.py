@@ -43,7 +43,7 @@ class Robot ():
 
 		self.mdp = MDP()
 		self.mdp.make_policy(False, 20, self.policy_list_nonopt)
-#		self.mdp.make_policy(True, self.max_iterations, self.policy_list_opt)
+		self.mdp.make_policy(True, self.max_iterations, self.policy_list_opt)
 
 		self.compare_policies()
 

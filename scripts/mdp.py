@@ -1,4 +1,4 @@
-#!/usr/bin/env pythn
+#/usr/bin/env pythn
 import rospy
 import random
 import math
@@ -131,11 +131,11 @@ class MDP():
 			self.current_pos[0] = pos[0]
 			self.current_pos[1] = pos[1]
         	
-		elif (pos in self.walls):
-			self.config['prob_move_correct'] = self.config['prob_move_correct'] - 0.05
-			if (self.config['prob_move_correct'] < 0.7):
-        			self.config['prob_move_correct'] = 0.7
-			return
+	#	elif (pos in self.walls):
+	#		self.config['prob_move_correct'] = self.config['prob_move_correct'] - 0.05
+	#		if (self.config['prob_move_correct'] < 0.7):
+        #			self.config['prob_move_correct'] = 0.7
+	#		return
 		
 			
 
