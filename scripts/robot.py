@@ -31,30 +31,53 @@ class Robot ():
 			queue_size = 10
 		)
 
-		# publish A* path
-		self.path_array = []
-		#self.publish_astar()
 
-		# publish MDP
-		#print "running mdp"
-		
+		----------MDP------------#
+
+		#FIRST EXPERIMENT		
 		self.policy_list_nonopt= [[0 for x in range(self.col)] for y in range(self.row)]
 		self.policy_list_opt = [[0 for x in range(self.col)] for y in range(self.row)]
-
+		self.iterations = 20
 		self.mdp = MDP()
-		self.mdp.make_policy(False, 20, self.policy_list_nonopt)
-		self.mdp.make_policy(True, self.max_iterations, self.policy_list_opt)
-
+		print "*** Creating policy grid with moving obstacles ***\n"
+		self.mdp.make_policy(False, False, False, self.iterations, self.policy_list_nonopt)
+		print "*** Creating optimal policy ***\n"
+		self.mdp.make_policy(True, False, False, self.max_iterations, self.policy_list_opt)
 		self.compare_policies()
+
+
+		#SECOND EXPERIMENT
+		self.policy_list_nonopt= [[0 for x in range(self.col)] for y in range(self.row)]
+		self.policy_list_opt = [[0 for x in range(self.col)] for y in range(self.row)]
+		self.iterations = 20
+		self.mdp = MDP()
+		print "*** Creating non-optimal grid and run the robot ***\n"
+		self.mdp.make_policy(False, True, False, self.iterations, self.policy_list_nonopt)
+		print "\n*** Creating optimal grid and run the robot ***\n"
+		self.mdp.make_policy(True, True, False, self.max_iterations, self.policy_list_opt)
+
+
+		#THIRD EXPERIMENT
+		self.policy_list_nonopt= [[0 for x in range(self.col)] for y in range(self.row)]
+		self.policy_list_opt = [[0 for x in range(self.col)] for y in range(self.row)]
+		self.iterations = 20
+		self.mdp = MDP()
+		print "*** Creating non-optimal grid and run the robot with increasing uncertainty ***\n"
+		self.mdp.make_policy(False, True, True, self.iterations, self.policy_list_nonopt)
+		print "*** Creating optimal grid and run the robot with increasing uncertainty ***\n"
+		self.mdp.make_policy(True, True, True, self.max_iterations, self.policy_list_opt)
+
 
 		rospy.sleep(1)
 		self.sim_complete_pub.publish(True)
 		rospy.sleep(1)
 		rospy.signal_shutdown(Robot)
 
+
 	def compare_policies (self):
 		diff = 0
 		same = 0
+		print "***** Comparing the optimal vs. non-optimal policy grids... ***** "
 		for r in range (self.row):
 			for c in range (self.col):
 				if (self.policy_list_opt[r][c] != self.policy_list_nonopt[r][c]):
@@ -62,18 +85,8 @@ class Robot ():
 				else:
 					same = same + 1
 
-		print "same: ", same
-		print "diff: ", diff
-
-	def publish_astar(self):
-		obj = Astar()
-		obj.astar_func(self.path_array)
-		for i in range (len(self.path_array)):
-			rospy.sleep(1)
-			msg = AStarPath()
-			msg.data = self.path_array[i]
-			self.astar_pub.publish(msg)
-			#self.astar_pub.publish(self.path_array[i])
+		print "\tNumber of SAME grid policies: ", same
+		print "\tNumber of DIFFERENT grid policies: ", diff
 
 
 if __name__ == '__main__':

@@ -28,6 +28,8 @@ class MDP():
 		self.prob_move_left = self.config['prob_move_left']
 		self.prob_move_right = self.config['prob_move_right']
 
+		self.prob_move_correct = self.config['prob_move_correct']
+
 		self.start = self.config['start']
 		self.goal = self.config['goal']
 		self.walls = self.config['walls']
@@ -47,16 +49,19 @@ class MDP():
 
 		
 
-	def make_policy (self, optimal, max_iterations, policy_list):
+	def make_policy (self, optimal, robot, uncer_change, max_iterations, policy_list):
+		
+		if(uncer_change):
+			self.prob_move_correct = 0.80
+
 		self.init_grid()
 		self.publish_iteration()
 		# going through iter-1 because init takes care of k=0
 		for i in range (max_iterations-1):
-			#print "iteration ", iteration, ":"
 			new_grid = [[0 for x in range(self.col)] for y in range(self.row)]
 			for r in range (self.row):
 				for c in range (self.col):			
-					# do not update the goal or the src too?
+					# do NOT update the goal or the src too
 					if ([r,c] in self.walls or [r,c] in self.pits or (self.goal[0] == r and self.goal[1] == c)):
 						continue
 					max_cost = float("-inf")
@@ -81,24 +86,27 @@ class MDP():
 			for w in range(self.col):
 				policy_list[r][w] = self.policy_list[r][w]
 
-		self.current_pos = self.init_src()
-		self.print_map()
-		while (self.current_pos[0] != self.goal[0] or self.current_pos[1] != self.goal[1]):
-			move = self.get_move (self.policy_list[self.current_pos[0]][self.current_pos[1]])
-			self.handle_move_request(move)
+		# if we are running the robot simulation
+		if (robot):
+			self.current_pos = self.init_src()
 			self.print_map()
-			if (self.current_pos in self.pits):
-				#self.print_map()
-				print "GAME OVER.YOU FAILED THE MISSION"
-				return
-			if (self.current_pos[0] == self.goal[0] and self.current_pos[1] == self.goal[1]):
-				#self.print_map()
-				print "YOU WIN!"
-				return
+			while (self.current_pos[0] != self.goal[0] or self.current_pos[1] != self.goal[1]):
+				move = self.get_move (self.policy_list[self.current_pos[0]][self.current_pos[1]])
+				self.handle_move_request(move, uncer_change)
+				self.print_map()
+				if (self.current_pos in self.pits):
+					print "--- GAME OVER.YOU FAILED THE MISSION ---"
+					return
+				if (self.current_pos[0] == self.goal[0] and self.current_pos[1] == self.goal[1]):
+					print "--- YOU WIN ---!"
+					return
+		else:
+			return
+
 
 	def init_src (self):
-		r = random.randint(0,self.row-1)
-		c = random.randint(0,self.col-1)
+		r = 0
+		c = 0
 		while ([r,c] in self.walls):
 			r = random.randint(0,self.row-1)
 			c = random.randint(0,self.col-1)
@@ -106,22 +114,22 @@ class MDP():
 			
 
 
- 	def handle_move_request(self, move):
-        	print self.config['prob_move_correct']
+ 	def handle_move_request(self, move, change):
+        	print self.prob_move_correct
         	if self.config['uncertain_motion']:
             		roll = random.uniform(0,1)
-            		if roll < self.config["prob_move_correct"]:
-                		self.make_move(move)
+            		if roll < self.prob_move_correct:
+                		self.make_move(move, change)
             		else:
                 		possible_moves = deepcopy(self.config['move_list'])
                 		possible_moves.remove(move)
                 		random_move = random.choice(possible_moves)
-                		self.make_move(random_move)
+                		self.make_move(random_move, change)
         	elif not self.config['uncertain_motion']:
-            		self.make_move(move)
+            		self.make_move(move, change)
 
 
-    	def make_move(self, move):
+    	def make_move(self, move, change):
 		pos = [0,0]
         	pos[0] = (self.current_pos[0] + move[0]) 
         	pos[1] = (self.current_pos[1] + move[1]) 
@@ -131,11 +139,11 @@ class MDP():
 			self.current_pos[0] = pos[0]
 			self.current_pos[1] = pos[1]
         	
-	#	elif (pos in self.walls):
-	#		self.config['prob_move_correct'] = self.config['prob_move_correct'] - 0.05
-	#		if (self.config['prob_move_correct'] < 0.7):
-        #			self.config['prob_move_correct'] = 0.7
-	#		return
+		elif (pos in self.walls and change):
+			self.prob_move_correct = self.prob_move_correct - 0.05
+			if (self.prob_move_correct < 0.5):
+        			self.prob_move_correct = 0.5
+			return
 		
 			
 
